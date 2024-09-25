@@ -1,0 +1,75 @@
+import json
+
+def register():
+    users = []
+    while True:
+        login = input("Digite o nome do usuário: ")
+        password = input("Digite a senha do usuário: ")
+        repassword = input("Digite a senha novamente: ")
+        name = input("Digite o nome completo do usuário: ")
+        birthday = input("Digite a data de nascimento do usuário: ")
+        email = input("Digite o email do usuário(usado para recuperação de senha): ")
+        reemail = input("Digite o email novamente: ")
+        if password == repassword and email == reemail:
+            users.append({"login": login, "password": password, "name": name, "birthday": birthday, "email": email})
+            print("Usuário registrado com sucesso!")
+            break
+        else:
+            print("As senhas não conferem ou os emails não conferem.")
+    return users
+
+def login(users):
+    while True:
+        login = input("Digite o nome do usuário: ")
+        password = input("Digite a senha do usuário: ")
+        for user in users:
+            if login == user["login"] and password == user["password"]:
+                print("Login efetuado com sucesso!")
+                return user
+            else:
+                print("Usuário ou senha incorretos.")
+
+def recover_password(users):
+    while True:
+        email = input("Digite o email do usuário: ")
+        for user in users:
+            if email == user["email"]:
+                print("Um email foi enviado para o usuário com instruções para recuperação de senha.")
+                return user
+            else:
+                print("Email não encontrado.")
+
+def save_users_db(users):
+    with open("users.json", "w") as file:
+        json.dump(users, file)
+
+def load_users_db():
+    try:
+        with open("users.json", "r") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        with open("users.json", "w") as file:
+            json.dump([], file)
+        return []
+
+def main():
+    users = load_users_db()
+    while True:
+        print("1. Login")
+        print("2. Registro")
+        print("3. Recuperar senha")
+        print("4. Sair")
+        choice = input("Digite a opção desejada: ")
+        if choice == "1":
+            user = login(users)
+            break
+        elif choice == "2":
+            users = register()
+            save_users_db(users)
+        elif choice == "3":
+            user = recover_password(users)
+        elif choice == "4":
+            break
+
+if __name__ == "__main__":
+    main()
