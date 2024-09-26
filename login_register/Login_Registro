@@ -1,43 +1,92 @@
 import json
+import keyboard
 
 def register():
-    users = []
+    users_db = load_users_db()
     while True:
-        login = input("Digite o nome do usuário: ")
-        password = input("Digite a senha do usuário: ")
+        if keyboard.is_pressed('esc'):
+            print("Voltando ao menu anterior...")
+            return
+        while True:
+            login = input("Digite o nome do usuário(Para voltar ao menu anterior, pressione a tecla ESC): ")
+            if login.islower() and len(login) >= 5 and login.isalnum():
+                break
+            else:
+                print("Nome de usuário inválido. Por favor, insira um nome de usuário com pelo menos 5 caracteres, todos em minúsculas e sem caracteres especiais.")
+        while True:
+            password = input("Digite a senha do usuário(A senha deve conter pelo menos 8 caracteres, uma letra maiúscula, uma letra minúscula e um número): ")
+            if len(password) >= 8 and any(char.isupper() for char in password) and any(char.islower() for char in password) and any(char.isdigit() for char in password):
+                break
+            else:
+                print("Senha inválida. Por favor, insira uma senha com pelo menos 8 caracteres, uma letra maiúscula, uma letra minúscula e um número.")
         repassword = input("Digite a senha novamente: ")
         name = input("Digite o nome completo do usuário: ")
-        birthday = input("Digite a data de nascimento do usuário: ")
-        email = input("Digite o email do usuário(usado para recuperação de senha): ")
+        while True:
+            birthday = input("Digite a data de nascimento do usuário: (DD/MM/YYYY) ")
+            if len(birthday) == 10 and birthday[2] == '/' and birthday[5] == '/':
+                break
+            else:
+                print("Data inválida. Por favor, insira a data no formato DD/MM/YYYY.")
+        while True:
+            email = input("Digite o email do usuário (usado para recuperação de senha): ")
+            if '@' in email:
+                break
+            else:
+                print("Email inválido. Por favor, insira um email válido.")
         reemail = input("Digite o email novamente: ")
-        if password == repassword and email == reemail:
-            users.append({"login": login, "password": password, "name": name, "birthday": birthday, "email": email})
-            print("Usuário registrado com sucesso!")
-            break
+        if password != repassword:
+            print("As senhas não conferem")
+        elif email != reemail:
+            print("Os emails não conferem")
+        elif any(user["login"] == login for user in users_db):
+            print("Usuário já em uso")
+            return
+        elif any(user["email"] == email for user in users_db):
+            print("Email já em uso")
+            return
         else:
-            print("As senhas não conferem ou os emails não conferem.")
-    return users
+            users_db.append({
+                "login": login,
+                "password": password,
+                "name": name,
+                "birthday": birthday,
+                "email": email
+            })
+            print("Usuário registrado com sucesso!")
+            save_users_db(users_db)
+            break
+
+def censored_mail(email):
+    local_part, domain = email.split("@")
+    if len(local_part) > 2:
+        middle = len(local_part) // 2
+        censored_local = local_part[0] + '*' * (middle - 1) + local_part[middle:]
+    else:
+        censored_local = local_part[0] + '*' * (len(local_part) - 1)
+    return censored_local + '@' + domain
 
 def login(users):
     while True:
-        login = input("Digite o nome do usuário: ")
+        login = input("Digite o nome do usuário ou email(Para voltar ao menu anterior, pressione a tecla ESC): ")
         password = input("Digite a senha do usuário: ")
+        if keyboard.is_pressed('esc'):
+            print("Voltando ao menu anterior...")
+            return None
         for user in users:
-            if login == user["login"] and password == user["password"]:
+            if (login == user["login"] or login == user["email"]) and password == user["password"]:
                 print("Login efetuado com sucesso!")
                 return user
-            else:
-                print("Usuário ou senha incorretos.")
+        print("Usuário ou senha incorretos.")
 
 def recover_password(users):
     while True:
-        email = input("Digite o email do usuário: ")
+        user_input = input("Digite o email ou nome de usuário: ")
         for user in users:
-            if email == user["email"]:
-                print("Um email foi enviado para o usuário com instruções para recuperação de senha.")
+            if user_input == user["email"] or user_input == user["login"]:
+                print(f"Um email foi enviado para {censored_mail(user['email'])} com instruções para recuperação de senha.")
                 return user
-            else:
-                print("Email não encontrado.")
+        print("Email ou nome de usuário não encontrado.")
+        
 
 def save_users_db(users):
     with open("users.json", "w") as file:
@@ -64,12 +113,14 @@ def main():
             user = login(users)
             break
         elif choice == "2":
-            users = register()
-            save_users_db(users)
+            register()
+            users = load_users_db()
         elif choice == "3":
-            user = recover_password(users)
+            recover_password(users)
         elif choice == "4":
             break
+        else:
+            print("Opção inválida.")
 
 if __name__ == "__main__":
     main()
